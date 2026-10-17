@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: dim_properties
+    columns:
+      - name: listing_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_locations
+    columns:
+      - name: zip_code
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_dates
+    columns:
+      - name: date_day
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_listings
+    columns:
+      - name: listing_snapshot_sk
+        tests:
+          - unique
+          - not_null
+
+      - name: listing_id
+        tests:
+          - relationships:
+              to: ref('dim_properties')
+              field: listing_id
+
+      - name: snapshot_date
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day

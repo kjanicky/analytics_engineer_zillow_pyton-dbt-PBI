@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: main
+    tables:
+      - name: raw_zillow_listings
+        description: "Real estate listings from Zillow sites from biggest cities in US"
