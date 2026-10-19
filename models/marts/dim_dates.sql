@@ -1,12 +1,13 @@
-with date_spine as (
-    select cast(generate_series as date) as date_day
-    from generate_series(
-        date '2020-01-01',
-        date '2030-12-31',
-        interval '1 day'
-    )
-)
+with raw_date_spine as (
+    {{ dbt_utils.date_spine(
+        datepart="day",
+        start_date="cast(current_date - interval 5 year as date)",
+        end_date="cast(current_date + interval 1 year as date)"
+    ) }}
+),
 
+date_spine as (select cast(date_day as date) as date_day
+                from raw_date_spine)
 select
     date_day,
     extract(year from date_day) as year,
@@ -21,5 +22,4 @@ select
         when extract(isodow from date_day) in (6, 7) then true
         else false
     end as is_weekend
-
 from date_spine

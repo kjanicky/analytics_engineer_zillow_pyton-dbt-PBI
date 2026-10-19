@@ -1,5 +1,5 @@
 select
-    md5(cast(listing_id as varchar) || '-' || cast(extracted_at as varchar)) as listing_snapshot_sk,
+    {{ dbt_utils.generate_surrogate_key(['listing_id', 'extracted_at']) }} as listing_snapshot_sk,
     listing_id,
     zip_code,
     price_usd,
@@ -12,6 +12,7 @@ select
     price_change_usd,
     case when price_change_usd < 0 then true else false end as is_price_cut,
     days_on_zillow,
+    extract(year from extracted_at) - year_built as property_age_years,
     is_fsbo,
     is_fsba,
     is_bank_owned,

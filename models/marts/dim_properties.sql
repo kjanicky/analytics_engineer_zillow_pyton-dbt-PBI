@@ -12,7 +12,6 @@ select
     lot_size,
     lot_size_unit,
     year_built,
-    extract(year from current_date) - year_built as property_age_years,
     has_floor_plan,
     has_vr_model,
     primary_photo_url,

@@ -61,7 +61,7 @@ renamed as (
 
     from source
     where zpid is not null
-    and "price.value" is not null
+    and "price.value" is not null and "price.value" > 0
       and listingDateTimeOnZillow is not null
 )
 
