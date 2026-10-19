@@ -27,3 +27,17 @@ seeds:
         id: bigint
         ALand: bigint
         AWater: bigint
+    raw_zillow_listings:
+      +column_types:
+        zpid: bigint
+        listingDateTimeOnZillow: bigint
+        timeOnZillow: bigint
+        price: double
+        latitude: double
+        longitude: double
+        bathrooms: double
+        bedrooms: double
+        livingArea: double
+        lotAreaValue: double
+        taxAssessedValue: double
+        zipcode: varchar

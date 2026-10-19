@@ -31,20 +31,23 @@ models:
       - name: zip_code
         tests:
             - relationships:
-                to: ref('dim_locations')
-                field: zip_code
+                arguments:
+                  to: ref('dim_locations')
+                  field: zip_code
       - name: listing_id
         tests:
           - not_null
           - relationships:
-              to: ref('dim_properties')
-              field: listing_id
+              arguments:
+                to: ref('dim_properties')
+                field: listing_id
       - name: snapshot_date
         tests:
           - not_null
           - relationships:
-              to: ref('dim_dates')
-              field: date_day
+              arguments:
+                to: ref('dim_dates')
+                field: date_day
       - name: price_usd
         tests:
           - not_null
