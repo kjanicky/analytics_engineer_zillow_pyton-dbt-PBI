@@ -1,4 +1,4 @@
-                  name: dbt CI/CD Pipeline
+name: dbt CI/CD Pipeline
 
 on:
   push:
