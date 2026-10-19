@@ -1,0 +1,29 @@
+name: 'zillow_dbt'
+version: '1.0.0'
+profile: 'zillow_dbt'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  zillow_dbt:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+seeds:
+  zillow_dbt:
+    mean_median_income_US:
+      +column_types:
+        id: bigint
+        ALand: bigint
+        AWater: bigint
