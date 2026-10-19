@@ -27,17 +27,23 @@ seeds:
         id: bigint
         ALand: bigint
         AWater: bigint
-    raw_zillow_listings:
+    raw_zillow_listings: # this is only for sample data so github actions works properly
       +column_types:
         zpid: bigint
         listingDateTimeOnZillow: bigint
-        timeOnZillow: bigint
-        price: double
-        latitude: double
-        longitude: double
-        bathrooms: double
-        bedrooms: double
-        livingArea: double
-        lotAreaValue: double
-        taxAssessedValue: double
-        zipcode: varchar
+        ssid: bigint
+        daysOnZillow: bigint
+        'address.buildingId': varchar
+        'address.zipcode': varchar
+        'location.latitude': double
+        'location.longitude': double
+        'price.value': double
+        'price.pricePerSquareFoot': double
+        'price.changedDate': bigint
+        'price.priceChange': double
+        'taxAssessment.taxAssessedValue': double
+        'taxAssessment.taxAssessmentYear': bigint
+        'estimates.zestimate': double
+        'estimates.rentZestimate': double
+        'lotSizeWithUnit.lotSize': double
+        'hdpView.price': double
