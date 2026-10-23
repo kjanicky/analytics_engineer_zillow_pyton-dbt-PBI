@@ -3,5 +3,5 @@ zillow_dbt:
   outputs:
     dev:
       type: duckdb
-      path: dev.duckdb
+      path: zillow_dw.duckdb
       threads: 1
