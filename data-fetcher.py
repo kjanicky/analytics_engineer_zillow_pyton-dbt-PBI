@@ -7,10 +7,12 @@ import duckdb
 import time
 
 load_dotenv()
-
 API_KEY = os.getenv("RAPIDAPI_KEY")
 API_HOST = os.getenv("RAPIDAPI_HOST")
 URL = os.getenv("RAPIDAPI_URL")
+for var in ("RAPID_API_KEY", "RAPIDAPI_HOST", "RAPIDAPI_URL"):
+    if not os.getenv(var):
+        raise EnvironmentError(f"Missing env var: {var}")
 HEADERS = {
     "X-RapidAPI-Key": API_KEY,
     "X-RapidAPI-Host": API_HOST
@@ -38,7 +40,7 @@ def api_fetcher(lat: str, lon: str, page: int = 1, radius=50, status_type="ForSa
 
     }
     try:
-        response = requests.get(URL, headers=HEADERS, params=query_parameters)
+        response = requests.get(URL, headers=HEADERS, params=query_parameters, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as err:
@@ -65,7 +67,7 @@ def transform_to_df(city_name,raw_data,extraction_time=None):
         logging.warning(f"No properties found for {city_name}.")
         return None
     df = pd.json_normalize(properties_data)
-    df['batch_row_id'] = range(len(df))
+
     df['searched_city'] = city_name
     df['extracted_at'] = extraction_time if extraction_time is not None else pd.Timestamp.now(tz='UTC')
     return df
@@ -94,28 +96,79 @@ def run_pipeline(max_pages_per_city: int = 2):
         return pd.DataFrame()
 
     final_df = pd.concat(all_city_dfs, ignore_index=True)
-
+    final_df['batch_row_id'] = range(len(df))
     return final_df
 
-def load_to_duckdb(df: pd.DataFrame, db_path: str = "zillow_dw.duckdb", table_name: str = "raw_zillow_listings") -> None:
+
+def load_to_duckdb(df: pd.DataFrame,db_path: str = "zillow_dw.duckdb",table_name: str = "raw_zillow_listings") -> None:
     if df is None or df.empty:
         logging.warning("No data to save (DataFrame is empty)")
         return
+
+    required_columns = {"zpid", "extracted_at"}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(
+            f"DataFrame must contain columns: {required_columns}"
+        )
+    if "batch_row_id" not in df.columns:
+        df = df.copy()
+        df["batch_row_id"] = range(len(df))
+
     try:
         with duckdb.connect(db_path) as con:
-            table_check = con.execute(f"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'main' AND table_name = '{table_name}')").fetchone()[0]
-            if  table_check:
-                con.execute(f"INSERT INTO {table_name} BY NAME SELECT * EXCLUDE (batch_row_id) FROM df "
-                            f"WHERE NOT EXISTS(SELECT 1 FROM {table_name} t WHERE t.zpid = df.zpid AND t.extracted_at = df.extracted_at) "
-                            f" QUALIFY ROW_NUMBER() OVER (PARTITION BY zpid, extracted_at ORDER BY batch_row_id DESC) = 1")
-            else:
-                con.execute(f"CREATE TABLE {table_name} AS SELECT * EXCLUDE (batch_row_id) FROM df "
-                            f"QUALIFY ROW_NUMBER() OVER (PARTITION BY zpid, extracted_at ORDER BY batch_row_id DESC) = 1")
+            table_exists = con.execute(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = 'main'
+                  AND table_name = ?
+                """,
+                [table_name]
+            ).fetchone()[0] > 0
+            con.register("incoming_df", df)
 
-            logging.info(f"Rows loaded to the table: {len(df)}'{table_name}' to data warehouse: '{db_path}'.")
+            deduplicated = con.execute(
+                """
+                SELECT * EXCLUDE (batch_row_id)
+                FROM incoming_df
+                QUALIFY ROW_NUMBER() OVER (
+                    PARTITION BY zpid, extracted_at
+                    ORDER BY batch_row_id DESC
+                ) = 1
+                """
+            ).df()
+
+            con.unregister("incoming_df")
+            con.register("deduplicated_df", deduplicated)
+
+            if not table_exists:
+                con.execute(
+                    f'CREATE TABLE "{table_name}" AS '
+                    "SELECT * FROM deduplicated_df"
+                )
+            else:
+                con.execute(
+                    f"""
+                    INSERT INTO "{table_name}" BY NAME
+                    SELECT d.*
+                    FROM deduplicated_df d
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM "{table_name}" t
+                        WHERE t.zpid = d.zpid
+                          AND t.extracted_at = d.extracted_at
+                    )
+                    """
+                )
+
+            logging.info(
+                f"Data loaded into '{table_name}' in '{db_path}'."
+            )
+
     except Exception as e:
-        logging.error(f"Error while loading the data to DuckDB, error: {e}")
+        logging.error(f"Error while loading data to DuckDB: {e}")
         raise
+
 
 if __name__ == "__main__":
     df = run_pipeline()
