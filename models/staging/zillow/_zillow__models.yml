@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_zillow__listing_snapshots
+    description: "Parsed v2 raw JSON. Grain: one row per listing per extraction run. No rows filtered."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, extracted_at]
+    columns:
+      - name: listing_snapshot_sk
+        description: "Surrogate key of (listing_id, extracted_at)"
+        tests: [unique, not_null]
+      - name: listing_id
+        description: "Zillow zpid"
+        tests: [not_null]
+      - name: extracted_at
+        tests: [not_null]
+      - name: price_usd
+        description: "Asking price in USD"
+        tests:
+          - not_null:
+              config: {severity: warn}
+      - name: lot_size_unit
+        tests:
+          - accepted_values:
+              values: ['acres', 'sqft']
+              config: {severity: warn}
+
+  - name: stg_zillow__legacy_listing_snapshots
+    description: "Frozen v1 flattened snapshots mapped to the v2 column names. Grain: listing per extraction."
+    columns:
+      - name: listing_snapshot_sk
+        tests: [unique, not_null]

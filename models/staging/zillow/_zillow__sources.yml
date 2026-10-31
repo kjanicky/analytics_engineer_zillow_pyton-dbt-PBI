@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  - name: zillow
+    schema: raw
+    description: "Raw Zillow API data loaded by the Python ingestion (ingestion/)."
+    tables:
+      - name: listings
+        identifier: zillow_listings
+        description: "One row per listing per extraction run. Untouched API property object in `payload`."
+        loaded_at_field: extracted_at
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 4, period: day}
+        columns:
+          - name: zpid
+            tests: [not_null]
+          - name: payload
+            tests: [not_null]
+
+      - name: listings_legacy
+        identifier: zillow_listings_legacy
+        description: "Frozen flattened snapshots from the v1 loader (pre raw-JSON). No new rows are added."

@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_census__zip_income
+    description: "Household income per zip code (average of census-tract values)."
+    columns:
+      - name: zip_code
+        tests: [unique, not_null]
+      - name: approx_median_household_income
+        description: "Average of tract-level medians. NOT a true zip-level median."
