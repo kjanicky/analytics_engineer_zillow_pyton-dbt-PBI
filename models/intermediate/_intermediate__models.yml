@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: int_listing_snapshots__unioned
+    description: "Legacy v1 + v2 raw-JSON snapshots. Grain: one row per listing per extraction run."
+    columns:
+      - name: listing_snapshot_sk
+        tests: [unique, not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['api_v2', 'legacy']
+
+  - name: int_listing_snapshots__validated
+    description: "Unioned snapshots + cleaned fields + is_valid_listing flag. No rows removed."
+    columns:
+      - name: is_valid_listing
+        description: "price > 0, listed_at and zip_code present"
+        tests: [not_null]
+
+  - name: int_listing_price_history
+    description: "Valid snapshots with lag() over previous snapshot of the same listing."
+    columns:
+      - name: listing_snapshot_sk
+        tests: [unique, not_null]
+
+  - name: int_zip_codes__resolved
+    description: "One resolved city/state per zip code with listing-based coordinates."
+    columns:
+      - name: zip_code
+        tests: [unique, not_null]

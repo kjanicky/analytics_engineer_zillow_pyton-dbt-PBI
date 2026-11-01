@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: dim_dates
+    description: "Calendar dimension spanning all listing and snapshot dates."
+    columns:
+      - name: date_day
+        tests: [unique, not_null]
+
+  - name: dim_locations
+    description: "One row per zip code with resolved city/state and census income."
+    columns:
+      - name: zip_code
+        tests: [unique, not_null]
+
+  - name: dim_properties
+    description: "SCD Type 1 property dimension: latest known attributes, no history."
+    columns:
+      - name: listing_id
+        tests: [unique, not_null]
+      - name: zip_code
+        tests:
+          - relationships:
+              to: ref('dim_locations')
+              field: zip_code
+
+  - name: fct_listing_snapshots
+    description: "Periodic snapshot fact. Grain: one row per listing per extraction run."
+    columns:
+      - name: listing_snapshot_sk
+        tests: [unique, not_null]
+      - name: listing_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_properties')
+              field: listing_id
+      - name: zip_code
+        tests:
+          - relationships:
+              to: ref('dim_locations')
+              field: zip_code
+      - name: snapshot_date
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: listed_date
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: price_usd
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: days_on_zillow
+        description: "Semi-additive: do not sum across snapshots; use latest or average."
+
+  - name: fct_listing_lifecycle
+    description: "Accumulating snapshot fact. Grain: one row per listing."
+    columns:
+      - name: listing_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_properties')
+              field: listing_id
+      - name: is_active
+        description: "False when the listing was missing from the latest run (proxy for sold/withdrawn)."
+
+unit_tests:
+  - name: test_price_ratios_are_calculated_correctly
+    description: "300k price, 250k zestimate, 2.5k monthly rent -> gap 20%, price-to-rent 10."
+    model: fct_listing_snapshots
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('int_listing_price_history')
+        rows:
+          - {listing_snapshot_sk: 'a', listing_id: 1, price_usd: 300000, zestimate_usd: 250000,
+             rent_zestimate_usd: 2500, extracted_at: '2026-01-01 00:00:00'}
+          - {listing_snapshot_sk: 'b', listing_id: 2, price_usd: 300000, zestimate_usd: 0,
+             rent_zestimate_usd: 0, extracted_at: '2026-01-01 00:00:00'}
+    expect:
+      rows:
+        - {listing_snapshot_sk: 'a', valuation_gap_pct: 0.2000, price_to_rent_ratio: 10.00}
+        - {listing_snapshot_sk: 'b', valuation_gap_pct: null, price_to_rent_ratio: null}

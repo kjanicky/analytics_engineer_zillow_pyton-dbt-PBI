@@ -1,49 +1,24 @@
-name: 'zillow_dbt'
-version: '1.0.0'
-profile: 'zillow_dbt'
+name: zillow_dbt
+version: "2.0.0"
+config-version: 2
+profile: zillow_dbt
 
 model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
 seed-paths: ["seeds"]
+test-paths: ["tests"]
 macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
 
-clean-targets:
-  - "target"
-  - "dbt_packages"
+vars:
+  include_legacy: true
 
 models:
   zillow_dbt:
     staging:
       +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
     marts:
       +materialized: table
-
-seeds:
-  zillow_dbt:
-    mean_median_income_US:
-      +column_types:
-        id: bigint
-        ALand: bigint
-        AWater: bigint
-    raw_zillow_listings: # this is only for sample data so github actions works properly
-      +column_types:
-        zpid: bigint
-        listingDateTimeOnZillow: bigint
-        ssid: bigint
-        daysOnZillow: bigint
-        'address.buildingId': varchar
-        'address.zipcode': varchar
-        'location.latitude': double
-        'location.longitude': double
-        'price.value': double
-        'price.pricePerSquareFoot': double
-        'price.changedDate': bigint
-        'price.priceChange': double
-        'taxAssessment.taxAssessedValue': double
-        'taxAssessment.taxAssessmentYear': bigint
-        'estimates.zestimate': double
-        'estimates.rentZestimate': double
-        'lotSizeWithUnit.lotSize': double
-        'hdpView.price': double
+      +schema: marts
