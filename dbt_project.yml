@@ -22,3 +22,31 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+seeds:
+  zillow_dbt:
+    mean_median_income_US:
+      +column_types:
+        id: bigint
+        ALand: bigint
+        AWater: bigint
+    raw_zillow_listings: # this is only for sample data so github actions works properly
+      +column_types:
+        zpid: bigint
+        listingDateTimeOnZillow: bigint
+        ssid: bigint
+        daysOnZillow: bigint
+        'address.buildingId': varchar
+        'address.zipcode': varchar
+        'location.latitude': double
+        'location.longitude': double
+        'price.value': double
+        'price.pricePerSquareFoot': double
+        'price.changedDate': bigint
+        'price.priceChange': double
+        'taxAssessment.taxAssessedValue': double
+        'taxAssessment.taxAssessmentYear': bigint
+        'estimates.zestimate': double
+        'estimates.rentZestimate': double
+        'lotSizeWithUnit.lotSize': double
+        'hdpView.price': double

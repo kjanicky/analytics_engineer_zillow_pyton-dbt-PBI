@@ -1,11 +1,24 @@
 -- Grain: one row per calendar day, covering every date present in the facts.
 
-with bounds as (
+with date_values as (
+
+    select cast(listed_at as date) as date_day
+    from {{ ref('int_listing_price_history') }}
+    where listed_at is not null
+
+    union all
+
+    select cast(extracted_at as date) as date_day
+    from {{ ref('int_listing_price_history') }}
+    where extracted_at is not null
+
+),
+
+bounds as (
     select
-        min(cast(least(listed_at, extracted_at) as date)) as start_date,
-        max(cast(extracted_at as date))                   as end_date
-    from {{ ref('int_listing_snapshots__validated') }}
-    where is_valid_listing
+        min(date_day) as start_date,
+        max(date_day) as end_date
+    from date_values
 ),
 
 spine as (
