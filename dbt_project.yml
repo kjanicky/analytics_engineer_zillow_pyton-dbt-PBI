@@ -22,6 +22,8 @@ models:
     marts:
       +materialized: table
       +schema: marts
+      +post-hook:
+          - "COPY {{ this }} TO 'powerbi_exports/{{ this.name }}.parquet' (FORMAT PARQUET)"
 
 seeds:
   zillow_dbt:
